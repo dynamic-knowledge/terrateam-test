@@ -43,6 +43,8 @@ dirs:
         tags: [ws-app_dev3]
 
 # Per-workspace workflows.
+# printenv reads from the subprocess environment directly — no shell quoting,
+# no $ expansion, no Python string.Template interference.
 # TF_BACKEND_CONFIG_HCL and TF_BACKEND_TFVARS_JSON are injected as direct env
 # vars in terrateam.yml (not through SECRETS_CONTEXT JSON), so quotes survive.
 workflows:
@@ -52,13 +54,7 @@ workflows:
         cmd:
           - bash
           - -c
-          - |
-            printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
-            printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
-            echo "=== semgrep.tfbackend key structure (values redacted) ===" >&2
-            sed 's/=.*$$/= [REDACTED]/' semgrep.tfbackend >&2
-            echo "=== quote check ===" >&2
-            grep -E '=\s*"' semgrep.tfbackend && echo "QUOTED: values have double quotes" >&2 || echo "UNQUOTED: values are missing double quotes" >&2
+          - printenv TF_BACKEND_CONFIG_HCL > semgrep.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
       - type: init
         extra_args: ["-backend-config=semgrep.tfbackend"]
       - type: plan
@@ -73,9 +69,7 @@ workflows:
         cmd:
           - bash
           - -c
-          - |
-            printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
-            printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
+          - printenv TF_BACKEND_CONFIG_HCL > semgrep.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
       - type: init
         extra_args: ["-backend-config=semgrep.tfbackend"]
       - type: apply
@@ -86,9 +80,7 @@ workflows:
         cmd:
           - bash
           - -c
-          - |
-            printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
-            printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
+          - printenv TF_BACKEND_CONFIG_HCL > semgrep.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
       - type: init
         extra_args: ["-backend-config=semgrep.tfbackend"]
       - type: plan
@@ -103,9 +95,7 @@ workflows:
         cmd:
           - bash
           - -c
-          - |
-            printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
-            printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
+          - printenv TF_BACKEND_CONFIG_HCL > semgrep.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
       - type: init
         extra_args: ["-backend-config=semgrep.tfbackend"]
       - type: apply
