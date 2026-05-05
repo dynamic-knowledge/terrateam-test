@@ -1,0 +1,107 @@
+# .terrateam/config.yml
+# https://terrateam.io/docs
+
+# Autoplan on PRs when Terraform or workspace files change
+when_modified:
+  autoplan: true
+  autoapply: false
+
+# OIDC runs globally before every operation (sets AWS credentials in env)
+hooks:
+  all:
+    pre:
+      - type: oidc
+        provider: aws
+        role_arn: "arn:aws:iam::619408137469:role/provisioning-backend"
+        region: us-west-2
+        session_name: terrateam-gha
+        duration: 3600
+
+dirs:
+  sample-component:
+    create_and_select_workspace: true
+    when_modified:
+      file_patterns:
+        - "${DIR}/*.tf"
+        - "${DIR}/workspaces/*.tfvars.json"
+    workspaces:
+      semgrep:
+        tags: [ws-semgrep]
+      app_dev3:
+        tags: [ws-app_dev3]
+
+  fol/another-sample:
+    create_and_select_workspace: true
+    when_modified:
+      file_patterns:
+        - "${DIR}/*.tf"
+        - "${DIR}/workspaces/*.tfvars.json"
+    workspaces:
+      semgrep:
+        tags: [ws-semgrep]
+      app_dev3:
+        tags: [ws-app_dev3]
+
+# Per-workspace workflows.
+# TF_BACKEND_CONFIG_HCL and TF_BACKEND_TFVARS_JSON are injected as direct env
+# vars in terrateam.yml (not through SECRETS_CONTEXT JSON), so quotes survive.
+workflows:
+  - tag_query: "ws-semgrep"
+    plan:
+      - type: run
+        cmd:
+          - bash
+          - -c
+          - |
+            printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
+            printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
+      - type: init
+        extra_args: ["-backend-config=semgrep.tfbackend"]
+      - type: plan
+        extra_args:
+          - "-var-file=workspaces/semgrep.tfvars.json"
+          - "-var-file=backend.tfvars.json"
+          - "-no-color"
+          - "-lock=false"
+          - "-input=false"
+    apply:
+      - type: run
+        cmd:
+          - bash
+          - -c
+          - |
+            printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
+            printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
+      - type: init
+        extra_args: ["-backend-config=semgrep.tfbackend"]
+      - type: apply
+
+  - tag_query: "ws-app_dev3"
+    plan:
+      - type: run
+        cmd:
+          - bash
+          - -c
+          - |
+            printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
+            printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
+      - type: init
+        extra_args: ["-backend-config=semgrep.tfbackend"]
+      - type: plan
+        extra_args:
+          - "-var-file=workspaces/app_dev3.tfvars.json"
+          - "-var-file=backend.tfvars.json"
+          - "-no-color"
+          - "-lock=false"
+          - "-input=false"
+    apply:
+      - type: run
+        cmd:
+          - bash
+          - -c
+          - |
+            printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
+            printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
+      - type: init
+        extra_args: ["-backend-config=semgrep.tfbackend"]
+      - type: apply
