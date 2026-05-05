@@ -55,10 +55,10 @@ workflows:
           - |
             printf '%s' "$TF_BACKEND_CONFIG_HCL" > semgrep.tfbackend
             printf '%s' "$TF_BACKEND_TFVARS_JSON" > backend.tfvars.json
-            echo "=== semgrep.tfbackend key structure (values redacted) ==="
-            sed 's/=.*$$/= [REDACTED]/' semgrep.tfbackend
-            echo "=== quote check ==="
-            grep -E '=\s*"' semgrep.tfbackend && echo "QUOTED: values have double quotes" || echo "UNQUOTED: values are missing double quotes"
+            echo "=== semgrep.tfbackend key structure (values redacted) ===" >&2
+            sed 's/=.*$$/= [REDACTED]/' semgrep.tfbackend >&2
+            echo "=== quote check ===" >&2
+            grep -E '=\s*"' semgrep.tfbackend && echo "QUOTED: values have double quotes" >&2 || echo "UNQUOTED: values are missing double quotes" >&2
       - type: init
         extra_args: ["-backend-config=semgrep.tfbackend"]
       - type: plan
