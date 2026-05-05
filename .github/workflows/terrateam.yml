@@ -44,3 +44,5 @@ jobs:
         env:
           SECRETS_CONTEXT: ${{ toJson(secrets) }}
           VARIABLES_CONTEXT: ${{ toJson(vars) }}
+          TF_BACKEND_CONFIG_HCL: ${{ secrets.TF_BACKEND_CONFIG_HCL }}
+          TF_BACKEND_TFVARS_JSON: ${{ secrets.TF_BACKEND_TFVARS_JSON }}

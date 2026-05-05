@@ -14,6 +14,7 @@ terraform {
   }
 }
 
+
 locals {
 
   default_tags = {
