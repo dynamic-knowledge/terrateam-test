@@ -58,10 +58,13 @@ dirs:
 
 # One workflow for all named workspaces: var file is workspaces/<workspace>.tfvars.json
 # (TERRATEAM_WORKSPACE matches the workspace key in dirs.*.workspaces).
-# Tag query uses "or" (https://docs.terrateam.io/workflows/advanced/tag-system).
-# printenv reads backend material from the real process env — no fragile $ expansion there.
+# Tag query must match implicit dir tags: dir:<repo-path> (see tag-system docs).
+# "another-sample" does NOT match fol/another-sample — use dir:fol/another-sample.
+#
+# Backend files come from GitHub Actions secrets (.github/workflows/terrateam.yml env):
+#   TF_BACKEND_CONFIG_HCL -> terrateam.tfbackend, TF_BACKEND_TFVARS_JSON -> backend.tfvars.json
 workflows:
-  - tag_query: "sample-component or another-sample"
+  - tag_query: "dir:sample-component or dir:fol/another-sample"
     plan:
       - type: run
         cmd:
