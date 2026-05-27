@@ -28,7 +28,7 @@ apply_requirements:
     - tag_query: "not dir:modules/*"  # Apply to all directories and workspaces
       approved:
         enabled: true
-        any_of: ["user:lina-semgrep"] # probably we should not use this and instead rely on status checks for apprival
+        any_of: ["user:lina-semgrep","user:lina-semgrep-2"] # probably we should not use this and instead rely on status checks for apprival
       merge_conflicts:
         enabled: true
       status_checks:
