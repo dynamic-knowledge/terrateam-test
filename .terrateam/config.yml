@@ -1,27 +1,45 @@
 # .terrateam/config.yml
 # https://terrateam.io/docs
 
-# Default 
-when_modified:
-  autoplan: false
-  autoplan_draft_pr: false
-  autoapply: false
-
+# this is the default / test out changing https://docs.terrateam.io/reference/configuration/apply-requirements#apply-requirements
+access_control:
+  ci_config_update:
+  - '*'
+  enabled: false
+  files: {}
+  policies:
+  - apply:
+    - '*'
+    apply_autoapprove: []
+    apply_force: []
+    apply_with_superapproval: []
+    plan:
+    - '*'
+    superapproval: []
+    tag_query: ''
+  terrateam_config_update:
+  - '*'
+  unlock:
+  - '*'
 
 apply_requirements:
   create_pending_apply_check: true
   checks:
-    - tag_query: ""  # Apply to all directories and workspaces
+    - tag_query: "not dir:modules/*"  # Apply to all directories and workspaces
       approved:
         enabled: true
-        any_of_count: 1 
+        any_of: ["user:lina-semgrep"] # probably we should not use this and instead rely on status checks for apprival
       merge_conflicts:
         enabled: true
       status_checks:
         enabled: true
         ignore_matching: []
 
-# Enable automatic dependency detection has limitation / does not discover workspaces automatically/ tries to run default workspace for each directory
+# Enable automatic dependency detection has limitation:
+# / does not discover workspaces automatically/
+# tries to run default workspace for each directory /
+# but it discovers modules and nested modules
+
 indexer:
   enabled: true
 
