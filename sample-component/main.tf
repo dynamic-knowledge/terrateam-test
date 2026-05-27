@@ -63,6 +63,11 @@ data "terraform_remote_state" "provisioning-roles" {
 
 data "aws_caller_identity" "current" {}
 
+
+module "dummy" {
+  source = "../modules/dummy"
+}
+
 output "current" {
   description = "calling entity"
   value       = data.aws_caller_identity.current
