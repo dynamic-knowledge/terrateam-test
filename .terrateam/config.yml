@@ -4,7 +4,27 @@
 # Autoplan on PRs when Terraform or workspace files change
 when_modified:
   autoplan: true
+  autoplan_draft_pr: true
+
+  # Auto-apply Terraform changes after merge to main branch
   autoapply: false
+
+apply_requirements:
+  create_pending_apply_check: true
+  checks:
+    - tag_query: ""  # Apply to all directories and workspaces
+      approved:
+        enabled: true
+        any_of_count: 1 
+      merge_conflicts:
+        enabled: true
+      status_checks:
+        enabled: true
+        ignore_matching: []
+
+# Enable automatic dependency detection
+indexer:
+  enabled: true
 
 # OIDC runs globally before every operation (sets AWS credentials in env)
 hooks:
@@ -19,47 +39,43 @@ hooks:
 
 dirs:
   sample-component:
-    create_and_select_workspace: true
     when_modified:
       file_patterns:
         - "${DIR}/*.tf"
         - "${DIR}/workspaces/*.tfvars.json"
     workspaces:
-      semgrep:
-        tags: [ws-semgrep]
-      app_dev3:
-        tags: [ws-app_dev3]
+      semgrep: {}
+      app_dev3: {}
 
   fol/another-sample:
-    create_and_select_workspace: true
     when_modified:
       file_patterns:
         - "${DIR}/*.tf"
         - "${DIR}/workspaces/*.tfvars.json"
     workspaces:
-      semgrep:
-        tags: [ws-semgrep]
-      app_dev3:
-        tags: [ws-app_dev3]
+      semgrep: {}
+      app_dev3: {}
 
-# Per-workspace workflows.
-# printenv reads from the subprocess environment directly — no shell quoting,
-# no $ expansion, no Python string.Template interference.
-# TF_BACKEND_CONFIG_HCL and TF_BACKEND_TFVARS_JSON are injected as direct env
-# vars in terrateam.yml (not through SECRETS_CONTEXT JSON), so quotes survive.
+# One workflow for all named workspaces: var file is workspaces/<workspace>.tfvars.json
+# (TERRATEAM_WORKSPACE matches the workspace key in dirs.*.workspaces).
+# Tag query must match implicit dir tags: dir:<repo-path> (see tag-system docs).
+# "another-sample" does NOT match fol/another-sample — use dir:fol/another-sample.
+#
+# Backend files come from GitHub Actions secrets (.github/workflows/terrateam.yml env):
+#   TF_BACKEND_CONFIG_HCL -> terrateam.tfbackend, TF_BACKEND_TFVARS_JSON -> backend.tfvars.json
 workflows:
-  - tag_query: "ws-semgrep"
+  - tag_query: "dir:sample-component or dir:fol/another-sample"
     plan:
       - type: run
         cmd:
           - bash
           - -c
-          - printenv TF_BACKEND_CONFIG_HCL > semgrep.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
+          - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
       - type: init
-        extra_args: ["-backend-config=semgrep.tfbackend"]
+        extra_args: ["-backend-config=terrateam.tfbackend"]
       - type: plan
         extra_args:
-          - "-var-file=workspaces/semgrep.tfvars.json"
+          - "-var-file=workspaces/$TERRATEAM_WORKSPACE.tfvars.json"
           - "-var-file=backend.tfvars.json"
           - "-no-color"
           - "-lock=false"
@@ -69,33 +85,11 @@ workflows:
         cmd:
           - bash
           - -c
-          - printenv TF_BACKEND_CONFIG_HCL > semgrep.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
+          - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
       - type: init
-        extra_args: ["-backend-config=semgrep.tfbackend"]
+        extra_args: ["-backend-config=terrateam.tfbackend"]
       - type: apply
-
-  - tag_query: "ws-app_dev3"
-    plan:
-      - type: run
-        cmd:
-          - bash
-          - -c
-          - printenv TF_BACKEND_CONFIG_HCL > semgrep.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
-      - type: init
-        extra_args: ["-backend-config=semgrep.tfbackend"]
-      - type: plan
         extra_args:
-          - "-var-file=workspaces/app_dev3.tfvars.json"
+          - "-var-file=workspaces/$TERRATEAM_WORKSPACE.tfvars.json"
           - "-var-file=backend.tfvars.json"
           - "-no-color"
-          - "-lock=false"
-          - "-input=false"
-    apply:
-      - type: run
-        cmd:
-          - bash
-          - -c
-          - printenv TF_BACKEND_CONFIG_HCL > semgrep.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
-      - type: init
-        extra_args: ["-backend-config=semgrep.tfbackend"]
-      - type: apply
