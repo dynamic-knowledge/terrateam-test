@@ -16,4 +16,10 @@ data "aws_iam_policy_document" "xyz" {
 
 module "nested" {
   source = "../nested-dummy"
+  name = var.policy_name
+}
+
+variable "policy_name" {
+  type = string
+  description = "The name of the policy"
 }

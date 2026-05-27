@@ -12,3 +12,13 @@ data "aws_iam_policy_document" "xyz" {
     ]
   }
 }
+
+resource "aws_iam_policy" "nested_dummy" {
+  name = var.name
+  policy = data.aws_iam_policy_document.xyz.json
+}
+
+variable "name" {
+  type = string
+  description = "The name of the policy"
+}
