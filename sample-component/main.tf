@@ -66,7 +66,9 @@ data "aws_caller_identity" "current" {}
 
 module "dummy" {
   source = "../modules/dummy"
+  policy_name = "${var.alias}-dummy-policy"  
 }
+
 
 output "current" {
   description = "calling entity"

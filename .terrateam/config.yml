@@ -35,6 +35,9 @@ apply_requirements:
         enabled: true
         ignore_matching: []
 
+automerge:
+  enabled: true
+  require_explicit_apply: true
 # Enable automatic dependency detection has limitation:
 # / does not discover workspaces automatically/
 # tries to run default workspace for each directory /
