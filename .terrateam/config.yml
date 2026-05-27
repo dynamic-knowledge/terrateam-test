@@ -22,9 +22,9 @@ apply_requirements:
         enabled: true
         ignore_matching: []
 
-# Enable automatic dependency detection
-indexer:
-  enabled: true
+# Enable automatic dependency detection has limitation / does not discover workspaces automatically/ tries to run default workspace for each directory
+#indexer:
+#  enabled: true
 
 # OIDC runs globally before every operation (sets AWS credentials in env)
 hooks:
@@ -37,25 +37,78 @@ hooks:
         session_name: terrateam-gha
         duration: 3600
 
+# dirs:
+#   sample-component:
+#     when_modified:
+#       file_patterns:
+#         - "${DIR}/*.tf"
+#         - "${DIR}/workspaces/*.tfvars.json"
+#     workspaces:
+#       semgrep: {}
+#       app_dev3: {}
+
+#   fol/another-sample:
+#     when_modified:
+#       file_patterns:
+#         - "${DIR}/*.tf"
+#         - "${DIR}/workspaces/*.tfvars.json"
+#     workspaces:
+#       semgrep: {}
+#       app_dev3: {}
+
 dirs:
-  sample-component:
-    when_modified:
-      file_patterns:
-        - "${DIR}/*.tf"
-        - "${DIR}/workspaces/*.tfvars.json"
-    workspaces:
-      semgrep: {}
-      app_dev3: {}
-
   fol/another-sample:
-    when_modified:
-      file_patterns:
-        - "${DIR}/*.tf"
-        - "${DIR}/workspaces/*.tfvars.json"
+    lock_branch_target: all
+    tags: []
     workspaces:
-      semgrep: {}
-      app_dev3: {}
-
+      app_dev3:
+        tags:
+        - dir:fol/another-sample
+        - workspace:app_dev3
+        when_modified:
+          autoapply: false
+          autoplan: true
+          autoplan_draft_pr: true
+          file_patterns:
+          - fol/another-sample/*.tf
+          - fol/another-sample/workspaces/app_dev3.tfvars.json
+      semgrep:
+        tags:
+        - dir:fol/another-sample
+        - workspace:semgrep
+        when_modified:
+          autoapply: false
+          autoplan: true
+          autoplan_draft_pr: true
+          file_patterns:
+          - fol/another-sample/*.tf
+          - fol/another-sample/workspaces/semgrep.tfvars.json
+  sample-component:
+    lock_branch_target: all
+    tags: []
+    workspaces:
+      app_dev3:
+        tags:
+        - dir:sample-component
+        - workspace:app_dev3
+        when_modified:
+          autoapply: false
+          autoplan: true
+          autoplan_draft_pr: true
+          file_patterns:
+          - sample-component/*.tf
+          - sample-component/workspaces/app_dev3.tfvars.json
+      semgrep:
+        tags:
+        - dir:sample-component
+        - workspace:semgrep
+        when_modified:
+          autoapply: false
+          autoplan: true
+          autoplan_draft_pr: true
+          file_patterns:
+          - sample-component/*.tf
+          - sample-component/workspaces/semgrep.tfvars.json
 # One workflow for all named workspaces: var file is workspaces/<workspace>.tfvars.json
 # (TERRATEAM_WORKSPACE matches the workspace key in dirs.*.workspaces).
 # Tag query must match implicit dir tags: dir:<repo-path> (see tag-system docs).
@@ -64,7 +117,7 @@ dirs:
 # Backend files come from GitHub Actions secrets (.github/workflows/terrateam.yml env):
 #   TF_BACKEND_CONFIG_HCL -> terrateam.tfbackend, TF_BACKEND_TFVARS_JSON -> backend.tfvars.json
 workflows:
-  - tag_query: "dir:sample-component or dir:fol/another-sample"
+  - tag_query: "" #"dir:sample-component or dir:fol/another-sample"
     plan:
       - type: run
         cmd:
