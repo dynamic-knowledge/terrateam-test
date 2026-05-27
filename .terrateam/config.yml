@@ -1,13 +1,11 @@
 # .terrateam/config.yml
 # https://terrateam.io/docs
 
-# Autoplan on PRs when Terraform or workspace files change
+# Default 
 when_modified:
-  autoplan: true
-  autoplan_draft_pr: true
+  autoplan: false
+  autoplan_draft_pr: false
 
-  # Auto-apply Terraform changes after merge to main branch
-  autoapply: false
 
 apply_requirements:
   create_pending_apply_check: true
@@ -57,6 +55,11 @@ hooks:
 #       app_dev3: {}
 
 dirs:
+  modules: #ignore modules directory
+    when_modified:
+      autoplan: false
+      autoplan_draft_pr: false
+      file_patterns: []
   fol/another-sample:
     lock_branch_target: all
     tags: []
@@ -117,7 +120,7 @@ dirs:
 # Backend files come from GitHub Actions secrets (.github/workflows/terrateam.yml env):
 #   TF_BACKEND_CONFIG_HCL -> terrateam.tfbackend, TF_BACKEND_TFVARS_JSON -> backend.tfvars.json
 workflows:
-  - tag_query: "" #"dir:sample-component or dir:fol/another-sample"
+  - tag_query: "not dir:modules/*" #"dir:sample-component or dir:fol/another-sample"
     plan:
       - type: run
         cmd:
