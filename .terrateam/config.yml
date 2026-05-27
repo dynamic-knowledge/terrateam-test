@@ -5,6 +5,7 @@
 when_modified:
   autoplan: false
   autoplan_draft_pr: false
+  autoapply: false
 
 
 apply_requirements:
@@ -21,8 +22,8 @@ apply_requirements:
         ignore_matching: []
 
 # Enable automatic dependency detection has limitation / does not discover workspaces automatically/ tries to run default workspace for each directory
-#indexer:
-#  enabled: true
+indexer:
+  enabled: true
 
 # OIDC runs globally before every operation (sets AWS credentials in env)
 hooks:
@@ -55,11 +56,6 @@ hooks:
 #       app_dev3: {}
 
 dirs:
-  modules: #ignore modules directory
-    when_modified:
-      autoplan: false
-      autoplan_draft_pr: false
-      file_patterns: []
   fol/another-sample:
     lock_branch_target: all
     tags: []
