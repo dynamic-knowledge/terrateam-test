@@ -13,7 +13,3 @@ data "aws_iam_policy_document" "xyz" {
     ]
   }
 }
-
-module "nested" {
-  source = "../nested-dummy"
-}

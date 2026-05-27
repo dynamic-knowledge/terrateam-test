@@ -1,30 +1,47 @@
 # .terrateam/config.yml
 # https://terrateam.io/docs
 
-# Autoplan on PRs when Terraform or workspace files change
-when_modified:
-  autoplan: true
-  autoplan_draft_pr: true
-
-  # Auto-apply Terraform changes after merge to main branch
-  autoapply: false
+# this is the default / test out changing https://docs.terrateam.io/reference/configuration/apply-requirements#apply-requirements
+access_control:
+  ci_config_update:
+  - '*'
+  enabled: false
+  files: {}
+  policies:
+  - apply:
+    - '*'
+    apply_autoapprove: []
+    apply_force: []
+    apply_with_superapproval: []
+    plan:
+    - '*'
+    superapproval: []
+    tag_query: ''
+  terrateam_config_update:
+  - '*'
+  unlock:
+  - '*'
 
 apply_requirements:
   create_pending_apply_check: true
   checks:
-    - tag_query: ""  # Apply to all directories and workspaces
+    - tag_query: "not dir:modules/*"  # Apply to all directories and workspaces
       approved:
         enabled: true
-        any_of_count: 1 
+        any_of: ["user:lina-semgrep"] # probably we should not use this and instead rely on status checks for apprival
       merge_conflicts:
         enabled: true
       status_checks:
         enabled: true
         ignore_matching: []
 
-# Enable automatic dependency detection has limitation / does not discover workspaces automatically/ tries to run default workspace for each directory
-#indexer:
-#  enabled: true
+# Enable automatic dependency detection has limitation:
+# / does not discover workspaces automatically/
+# tries to run default workspace for each directory /
+# but it discovers modules and nested modules
+
+indexer:
+  enabled: true
 
 # OIDC runs globally before every operation (sets AWS credentials in env)
 hooks:
@@ -117,7 +134,7 @@ dirs:
 # Backend files come from GitHub Actions secrets (.github/workflows/terrateam.yml env):
 #   TF_BACKEND_CONFIG_HCL -> terrateam.tfbackend, TF_BACKEND_TFVARS_JSON -> backend.tfvars.json
 workflows:
-  - tag_query: "" #"dir:sample-component or dir:fol/another-sample"
+  - tag_query: "not dir:modules/*" #"dir:sample-component or dir:fol/another-sample"
     plan:
       - type: run
         cmd:
