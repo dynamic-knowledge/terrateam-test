@@ -21,6 +21,7 @@ locals {
     config-as-code = "terraform"
     alias          = var.alias
     git            = "https://github.com/terrateam-test/another-sample"
+    dummy          = "dummy"
 
   }
   session_name = "another-sample@component"
@@ -93,4 +94,23 @@ variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(any)
   default     = {}
+}
+
+
+
+data "aws_iam_policy_document" "another-sample-dummy-policy" {
+  statement {
+    actions = [
+      "events:PutRule",
+      "events:PutTargets"
+    ]
+    resources = [
+      "arn:aws:events:us-east-1:${data.aws_caller_identity.current.account_id}:rule/xyz",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "another-sample-dummy-policy" {
+  name = "another-sample-dummy-policy"
+  policy = data.aws_iam_policy_document.another-sample-dummy-policy.json
 }
