@@ -38,6 +38,11 @@ apply_requirements:
 automerge:
   enabled: true
   require_explicit_apply: true
+
+config_builder:
+  enabled: true
+  script: scripts/config_builder
+
 # Enable automatic dependency detection has limitation:
 # / does not discover workspaces automatically/
 # tries to run default workspace for each directory /
@@ -45,6 +50,7 @@ automerge:
 
 indexer:
   enabled: true
+
 
 # OIDC runs globally before every operation (sets AWS credentials in env)
 hooks:
@@ -57,78 +63,7 @@ hooks:
         session_name: terrateam-gha
         duration: 3600
 
-# dirs:
-#   sample-component:
-#     when_modified:
-#       file_patterns:
-#         - "${DIR}/*.tf"
-#         - "${DIR}/workspaces/*.tfvars.json"
-#     workspaces:
-#       semgrep: {}
-#       app_dev3: {}
 
-#   fol/another-sample:
-#     when_modified:
-#       file_patterns:
-#         - "${DIR}/*.tf"
-#         - "${DIR}/workspaces/*.tfvars.json"
-#     workspaces:
-#       semgrep: {}
-#       app_dev3: {}
-
-dirs:
-  fol/another-sample:
-    lock_branch_target: all
-    tags: []
-    workspaces:
-      app_dev3:
-        tags:
-        - dir:fol/another-sample
-        - workspace:app_dev3
-        when_modified:
-          autoapply: false
-          autoplan: true
-          autoplan_draft_pr: true
-          file_patterns:
-          - fol/another-sample/*.tf
-          - fol/another-sample/workspaces/app_dev3.tfvars.json
-      semgrep:
-        tags:
-        - dir:fol/another-sample
-        - workspace:semgrep
-        when_modified:
-          autoapply: false
-          autoplan: true
-          autoplan_draft_pr: true
-          file_patterns:
-          - fol/another-sample/*.tf
-          - fol/another-sample/workspaces/semgrep.tfvars.json
-  sample-component:
-    lock_branch_target: all
-    tags: []
-    workspaces:
-      app_dev3:
-        tags:
-        - dir:sample-component
-        - workspace:app_dev3
-        when_modified:
-          autoapply: false
-          autoplan: true
-          autoplan_draft_pr: true
-          file_patterns:
-          - sample-component/*.tf
-          - sample-component/workspaces/app_dev3.tfvars.json
-      semgrep:
-        tags:
-        - dir:sample-component
-        - workspace:semgrep
-        when_modified:
-          autoapply: false
-          autoplan: true
-          autoplan_draft_pr: true
-          file_patterns:
-          - sample-component/*.tf
-          - sample-component/workspaces/semgrep.tfvars.json
 # One workflow for all named workspaces: var file is workspaces/<workspace>.tfvars.json
 # (TERRATEAM_WORKSPACE matches the workspace key in dirs.*.workspaces).
 # Tag query must match implicit dir tags: dir:<repo-path> (see tag-system docs).
@@ -166,3 +101,78 @@ workflows:
           - "-var-file=workspaces/$TERRATEAM_WORKSPACE.tfvars.json"
           - "-var-file=backend.tfvars.json"
           - "-no-color"
+
+
+
+# dirs:
+#   sample-component:
+#     when_modified:
+#       file_patterns:
+#         - "${DIR}/*.tf"
+#         - "${DIR}/workspaces/*.tfvars.json"
+#     workspaces:
+#       semgrep: {}
+#       app_dev3: {}
+
+#   fol/another-sample:
+#     when_modified:
+#       file_patterns:
+#         - "${DIR}/*.tf"
+#         - "${DIR}/workspaces/*.tfvars.json"
+#     workspaces:
+#       semgrep: {}
+#       app_dev3: {}
+
+dirs:
+  fol/another-sample/terraform:
+    lock_branch_target: all
+    tags: []
+    workspaces:
+      app_dev3:
+        tags:
+        - dir:fol/another-sample/terraform
+        - workspace:app_dev3
+        when_modified:
+          autoapply: false
+          autoplan: true
+          autoplan_draft_pr: true
+          file_patterns:
+          - fol/another-sample/terraform/*.tf
+          - fol/another-sample/terraform/workspaces/app_dev3.tfvars.json
+      semgrep:
+        tags:
+        - dir:fol/another-sample/terraform
+        - workspace:semgrep
+        when_modified:
+          autoapply: false
+          autoplan: true
+          autoplan_draft_pr: true
+          file_patterns:
+          - fol/another-sample/terraform/*.tf
+          - fol/another-sample/terraform/workspaces/semgrep.tfvars.json
+  sample-component/terraform:
+    lock_branch_target: all
+    tags: []
+    workspaces: 
+      app_dev3:
+        tags:
+        - dir:sample-component/terraform
+        - workspace:app_dev3
+        when_modified:
+          autoapply: false
+          autoplan: true
+          autoplan_draft_pr: true
+          file_patterns:
+          - sample-component/terraform/*.tf
+          - sample-component/terraform/workspaces/app_dev3.tfvars.json
+      semgrep:
+        tags:
+        - dir:sample-component/terraform
+        - workspace:semgrep
+        when_modified:
+          autoapply: false
+          autoplan: true
+          autoplan_draft_pr: true
+          file_patterns:
+          - sample-component/terraform/*.tf
+          - sample-component/terraform/workspaces/semgrep.tfvars.json
