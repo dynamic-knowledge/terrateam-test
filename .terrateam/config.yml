@@ -51,6 +51,11 @@ config_builder:
 indexer:
   enabled: true
 
+notifications:
+  policies:
+    - tag_query: ''
+      comment_strategy: 'delete'
+
 parallel_runs: 10
 batch_runs:
   enabled: false
