@@ -51,7 +51,9 @@ config_builder:
 indexer:
   enabled: true
 
-
+parallel_runs: 10
+batch_runs:
+  enabled: false
 # OIDC runs globally before every operation (sets AWS credentials in env)
 hooks:
   all:
