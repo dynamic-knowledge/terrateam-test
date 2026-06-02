@@ -2,8 +2,8 @@ terraform {
   required_version = ">= 1.12.2"
 
   backend "s3" {
-    key                  = "sample-component/terraform.tfstate"
-    workspace_key_prefix = "sample-component"
+    key                  = "another-sample/terraform.tfstate"
+    workspace_key_prefix = "another-sample"
   }
 
   required_providers {
@@ -20,10 +20,11 @@ locals {
   default_tags = {
     config-as-code = "terraform"
     alias          = var.alias
-    git            = "https://github.com/terrateam-test/sample-component"
+    git            = "https://github.com/terrateam-test/another-sample"
+    dummy          = "dummy"
 
   }
-  session_name = "sample-component@component"
+  session_name = "another-sample@component"
 
   tags = merge(var.tags, local.default_tags)
 }
@@ -63,13 +64,6 @@ data "terraform_remote_state" "provisioning-roles" {
 
 data "aws_caller_identity" "current" {}
 
-
-module "dummy" {
-  source = "../modules/dummy"
-  policy_name = "${var.alias}-dummy-policy"  
-}
-
-
 output "current" {
   description = "calling entity"
   value       = data.aws_caller_identity.current
@@ -100,4 +94,23 @@ variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(any)
   default     = {}
+}
+
+
+
+data "aws_iam_policy_document" "another-sample-dummy-policy" {
+  statement {
+    actions = [
+      "events:PutRule",
+      "events:PutTargets"
+    ]
+    resources = [
+      "arn:aws:events:us-east-1:${data.aws_caller_identity.current.account_id}:rule/abc",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "another-sample-dummy-policy" {
+  name = "another-sample-dummy-policy"
+  policy = data.aws_iam_policy_document.another-sample-dummy-policy.json
 }

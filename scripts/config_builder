@@ -1,0 +1,85 @@
+#! /usr/bin/env python3
+
+# You can sanity-check locally with:
+# echo '{}' | ./scripts/config_builder
+
+
+import json
+import sys
+from pathlib import Path
+
+EXCLUDED_DIRS = frozenset({"terraform-remote-state/terraform"})
+
+
+def find_repo_root() -> Path:
+    cwd = Path.cwd()
+    for candidate in (cwd, *cwd.parents):
+        if (candidate / ".terrateam").is_dir() or (candidate / ".git").is_dir():
+            return candidate
+    return cwd
+
+
+def workspace_name_from_file(filename: str) -> str | None:
+    """Map workspaces/<name>.tfvars.json to workspace key <name>."""
+    if not filename.endswith(".tfvars.json"):
+        return None
+    return filename[: -len(".tfvars.json")]
+
+
+def workspace_entry(rel_dir: str, workspace: str) -> dict:
+    return {
+        "tags": [
+            f"dir:{rel_dir}",
+            f"workspace:{workspace}",
+        ],
+        "when_modified": {
+            "autoapply": False,
+            "autoplan": True,
+            "autoplan_draft_pr": True,
+            "file_patterns": [
+                f"{rel_dir}/*.tf",
+                f"{rel_dir}/workspaces/{workspace}.tfvars.json",
+            ],
+        },
+    }
+
+
+def discover_dirs(repo_root: Path) -> dict:
+    dirs: dict = {}
+
+    for terraform_dir in sorted(repo_root.rglob("terraform")):
+        if not terraform_dir.is_dir() or terraform_dir.name != "terraform":
+            continue
+
+        rel_dir = terraform_dir.relative_to(repo_root).as_posix()
+        if rel_dir in EXCLUDED_DIRS:
+            continue
+
+        workspaces_dir = terraform_dir / "workspaces"
+        workspaces: dict = {}
+
+        if workspaces_dir.is_dir():
+            for entry in sorted(workspaces_dir.iterdir()):
+                if not entry.is_file() or entry.name.startswith("."):
+                    continue
+                workspace = workspace_name_from_file(entry.name)
+                if workspace is not None:
+                    workspaces[workspace] = workspace_entry(rel_dir, workspace)
+
+        dirs[rel_dir] = {
+            "lock_branch_target": "all",
+            "tags": [],
+            "workspaces": workspaces,
+        }
+
+    return dirs
+
+
+def main() -> None:
+    repo_config = json.load(sys.stdin)
+    repo_config["dirs"] = discover_dirs(find_repo_root())
+    print(json.dumps(repo_config, indent=2))
+
+
+if __name__ == "__main__":
+    main()
