@@ -1,4 +1,4 @@
-name: PR Status Check
+name: Dummy Check
 
 on:
   pull_request:
@@ -33,11 +33,11 @@ jobs:
           MANUAL_STATUS: ${{ github.event.inputs.status }}
         with:
           script: |
-            const contextName = 'manual-pr-review';
+            const contextName = 'dummy-check';
             const descriptions = {
-              pending: 'Awaiting manual review',
-              success: 'Approved',
-              failure: 'Rejected',
+              pending: 'Awaiting dummy check',
+              success: 'Passed',
+              failure: 'Failed',
             };
 
             let prNumber;
@@ -73,7 +73,7 @@ jobs:
               state: status,
               context: contextName,
               description: descriptions[status],
-              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/workflows/pr-status-check.yml`,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/workflows/dummy-check.yml`,
             });
 
             core.notice(
