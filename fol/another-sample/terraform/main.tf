@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.12.2"
+  required_version = "1.15.5"
 
   backend "s3" {
     key                  = "another-sample/terraform.tfstate"
