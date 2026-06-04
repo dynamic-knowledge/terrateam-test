@@ -18,7 +18,8 @@ apply_requirements:
 
 automerge:
   enabled: true
-  require_explicit_apply: true
+  create_pending_apply_check: true
+  require_explicit_apply: false
 
 config_builder:
   enabled: true
