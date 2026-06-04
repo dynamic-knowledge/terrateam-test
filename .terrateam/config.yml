@@ -1,27 +1,8 @@
 # .terrateam/config.yml
 # https://terrateam.io/docs
 
-# this is the default / test out changing https://docs.terrateam.io/reference/configuration/apply-requirements#apply-requirements
-access_control:
-  ci_config_update:
-  - '*'
-  enabled: true
-  files: {}
-  policies:
-  - apply:
-    - '*'
-    apply_autoapprove: []
-    apply_force: []
-    apply_with_superapproval: []
-    plan:
-    - '*'
-    superapproval: []
-    tag_query: ''
-  terrateam_config_update:
-  - '*'
-  unlock:
-  - '*'
 
+# changes here gets reflected from the default branch only
 apply_requirements:
   create_pending_apply_check: true
   checks:
