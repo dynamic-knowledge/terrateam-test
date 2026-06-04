@@ -39,7 +39,7 @@ notifications:
     - tag_query: ''
       comment_strategy: 'delete'
 
-parallel_runs: 10
+parallel_runs: 1
 batch_runs:
   enabled: true
   max_workspaces_per_batch: 50
