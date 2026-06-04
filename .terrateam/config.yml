@@ -18,7 +18,7 @@ apply_requirements:
 
 automerge:
   enabled: true
-  require_explicit_apply: true
+  require_explicit_apply: false
   retain_pr_title: true
   merge_strategy: squash
   delete_branch: true
