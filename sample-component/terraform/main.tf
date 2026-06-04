@@ -21,6 +21,7 @@ locals {
     config-as-code = "terraform"
     alias          = var.alias
     git            = "https://github.com/terrateam-test/sample-component"
+    "large-change" = "true"
 
   }
   session_name = "sample-component@component"
