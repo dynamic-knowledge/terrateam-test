@@ -39,65 +39,56 @@ jobs:
             // Set pending immediately so apply is blocked while we evaluate.
             await setStatus('pending', 'Checking CODEOWNERS review requirements…');
 
-            // Fetch current PR to get who still needs to review.
-            const { data: pr } = await github.rest.pulls.get({
-              owner,
-              repo,
-              pull_number: prNumber,
-            });
-
-            const pendingUsers = pr.requested_reviewers;   // individuals not yet reviewed
-            const pendingTeams = pr.requested_teams;       // teams not yet having a member review
-
-            // Fetch all reviews (paginated) and build latest non-comment state per user.
-            // GitHub removes a user/team from requested_* once they submit a formal review,
-            // so we need the reviews list to catch CHANGES_REQUESTED.
-            const latestReviews = {};
-            let page = 1;
-            while (true) {
-              const { data: batch } = await github.rest.pulls.listReviews({
-                owner,
-                repo,
-                pull_number: prNumber,
-                per_page: 100,
-                page,
-              });
-              if (batch.length === 0) break;
-              for (const review of batch) {
-                // COMMENTED is an informal review type (line comments without a submit);
-                // it does not satisfy or block a review request.
-                if (review.state !== 'COMMENTED') {
-                  const existing = latestReviews[review.user.login];
-                  if (!existing || new Date(review.submitted_at) > new Date(existing.submitted_at)) {
-                    latestReviews[review.user.login] = review;
+            // Use GitHub's GraphQL reviewDecision, which evaluates CODEOWNERS rules natively:
+            //   - "any one of multiple owners on the same line is sufficient"
+            //   - per-file requirements across multiple changed files are all enforced
+            //   - no race condition: computed from branch protection rules, not review assignment state
+            //
+            // Prerequisite: branch protection must have "Require review from code owners" enabled.
+            // If not enabled, reviewDecision is null and this workflow will fail loudly.
+            const { repository } = await github.graphql(`
+              query($owner: String!, $repo: String!, $pr: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $pr) {
+                    reviewDecision
+                    reviewRequests(first: 100) {
+                      nodes {
+                        requestedReviewer {
+                          ... on User  { login }
+                          ... on Team  { name }
+                        }
+                      }
+                    }
                   }
                 }
               }
-              if (batch.length < 100) break;
-              page++;
-            }
+            `, { owner, repo, pr: prNumber });
 
-            const changesRequestedBy = Object.values(latestReviews)
-              .filter(r => r.state === 'CHANGES_REQUESTED')
-              .map(r => r.user.login);
+            const decision = repository.pullRequest.reviewDecision;
 
-            // Evaluate in priority order: pending individuals → pending teams → changes requested.
-            if (pendingUsers.length > 0) {
-              const names = pendingUsers.map(u => u.login).join(', ');
-              await setStatus('pending', `Waiting for reviews from: ${names}`);
+            if (decision === 'APPROVED') {
+              await setStatus('success', 'All CODEOWNERS reviews satisfied');
               return;
             }
 
-            if (pendingTeams.length > 0) {
-              const names = pendingTeams.map(t => t.name).join(', ');
-              await setStatus('pending', `Waiting for team review from: ${names}`);
+            if (decision === 'CHANGES_REQUESTED') {
+              await setStatus('pending', 'Changes requested — resolve before apply');
               return;
             }
 
-            if (changesRequestedBy.length > 0) {
-              const names = changesRequestedBy.join(', ');
-              await setStatus('pending', `Changes requested by ${names} — resolve before apply`);
+            if (decision === 'REVIEW_REQUIRED') {
+              const pending = repository.pullRequest.reviewRequests.nodes
+                .map(n => n.requestedReviewer?.login ?? n.requestedReviewer?.name)
+                .filter(Boolean)
+                .join(', ');
+              await setStatus('pending', pending
+                ? `Waiting for reviews from: ${pending}`
+                : 'Waiting for required code owner reviews');
               return;
             }
 
-            await setStatus('success', 'All CODEOWNERS reviews satisfied');
+            // decision === null means "Require review from code owners" is not enabled in
+            // branch protection. Fail loudly so the misconfiguration is visible.
+            core.setFailed(
+              'reviewDecision is null — enable "Require review from code owners" in branch protection'
+            );
