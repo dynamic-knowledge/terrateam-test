@@ -4,6 +4,7 @@
 
 # changes here gets reflected from the default branch only
 apply_requirements:
+  create_pending_apply_check: true
   checks:
     - tag_query: "not dir:modules/*"  # Apply to all directories and workspaces
       approved:
@@ -17,7 +18,6 @@ apply_requirements:
 
 automerge:
   enabled: true
-  create_pending_apply_check: true
   require_explicit_apply: false
 
 config_builder:
