@@ -66,7 +66,7 @@ data "aws_caller_identity" "current" {}
 
 module "dummy" {
   source = "../../modules/dummy"
-  policy_name = "${var.alias}-dummy-policy-1"  
+  policy_name = "${var.alias}-dummy-policy"  
 }
 
 
