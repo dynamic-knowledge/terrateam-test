@@ -4,7 +4,6 @@
 
 # changes here gets reflected from the default branch only
 apply_requirements:
-  create_pending_apply_check: false
   checks:
     - tag_query: "not dir:modules/*"  # Apply to all directories and workspaces
       approved:
