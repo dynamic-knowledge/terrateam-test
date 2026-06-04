@@ -1,0 +1,103 @@
+name: CODEOWNERS Review Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, review_requested, review_request_removed]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  statuses: write
+  pull-requests: read
+
+jobs:
+  check-codeowners-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check CODEOWNERS review status
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const CHECK_NAME = 'codeowners-review';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = context.payload.pull_request.number;
+            const sha = context.payload.pull_request.head.sha;
+
+            async function setStatus(state, description) {
+              await github.rest.repos.createCommitStatus({
+                owner,
+                repo,
+                sha,
+                state,
+                context: CHECK_NAME,
+                description,
+                target_url: `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              });
+            }
+
+            // Set pending immediately so apply is blocked while we evaluate.
+            await setStatus('pending', 'Checking CODEOWNERS review requirements…');
+
+            // Fetch current PR to get who still needs to review.
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            const pendingUsers = pr.requested_reviewers;   // individuals not yet reviewed
+            const pendingTeams = pr.requested_teams;       // teams not yet having a member review
+
+            // Fetch all reviews (paginated) and build latest non-comment state per user.
+            // GitHub removes a user/team from requested_* once they submit a formal review,
+            // so we need the reviews list to catch CHANGES_REQUESTED.
+            const latestReviews = {};
+            let page = 1;
+            while (true) {
+              const { data: batch } = await github.rest.pulls.listReviews({
+                owner,
+                repo,
+                pull_number: prNumber,
+                per_page: 100,
+                page,
+              });
+              if (batch.length === 0) break;
+              for (const review of batch) {
+                // COMMENTED is an informal review type (line comments without a submit);
+                // it does not satisfy or block a review request.
+                if (review.state !== 'COMMENTED') {
+                  const existing = latestReviews[review.user.login];
+                  if (!existing || new Date(review.submitted_at) > new Date(existing.submitted_at)) {
+                    latestReviews[review.user.login] = review;
+                  }
+                }
+              }
+              if (batch.length < 100) break;
+              page++;
+            }
+
+            const changesRequestedBy = Object.values(latestReviews)
+              .filter(r => r.state === 'CHANGES_REQUESTED')
+              .map(r => r.user.login);
+
+            // Evaluate in priority order: pending individuals → pending teams → changes requested.
+            if (pendingUsers.length > 0) {
+              const names = pendingUsers.map(u => u.login).join(', ');
+              await setStatus('pending', `Waiting for reviews from: ${names}`);
+              return;
+            }
+
+            if (pendingTeams.length > 0) {
+              const names = pendingTeams.map(t => t.name).join(', ');
+              await setStatus('pending', `Waiting for team review from: ${names}`);
+              return;
+            }
+
+            if (changesRequestedBy.length > 0) {
+              const names = changesRequestedBy.join(', ');
+              await setStatus('pending', `Changes requested by ${names} — resolve before apply`);
+              return;
+            }
+
+            await setStatus('success', 'All CODEOWNERS reviews satisfied');
