@@ -42,7 +42,8 @@ notifications:
 
 parallel_runs: 10
 batch_runs:
-  enabled: false
+  enabled: true
+  max_workspaces_per_batch: 50
 # OIDC runs globally before every operation (sets AWS credentials in env)
 hooks:
   all:
