@@ -73,25 +73,24 @@ definitions:
       - -c
       - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
   terraform_secrets: &terraform_secrets
-    - type: env
-      method: source
-      sensitive: true
-      cmd:
-        - bash
-        - -c
-        - |
-          echo "vars go here"
-          # export AKUITY_API_KEY_ID="$AKUITY_API_KEY_ID"
-          # export AKUITY_API_KEY_SECRET="$AKUITY_API_KEY_SECRET"
-          # export SNOWFLAKE_USER="$SNOWFLAKE_USER"
-          # export SNOWFLAKE_PASSWORD="$SNOWFLAKE_PASSWORD"
-          # export TF_VAR_snowflake_user="$SNOWFLAKE_USER"
-          # export TF_VAR_snowflake_password="$SNOWFLAKE_PASSWORD"
-          # export TF_VAR_fivetran_api_key="$FIVETRAN_API_KEY"
-          # export TF_VAR_fivetran_api_secret="$FIVETRAN_API_SECRET"
-          # export TF_VAR_dreamdata_external_id="$DREAMDATA_EXTERNAL_ID"
-          # export TF_VAR_dreamdata_snowflake_integration_external_id="$SNOWFLAKE_AWS_EXTERNAL_ID"
-          # export TF_VAR_datadog_api_key="$DATADOG_API_KEY"
+    type: env
+    method: source
+    sensitive: true
+    cmd:
+      - bash
+      - -c
+      - |
+        export AKUITY_API_KEY_ID="$AKUITY_API_KEY_ID"
+        export AKUITY_API_KEY_SECRET="$AKUITY_API_KEY_SECRET"
+        export SNOWFLAKE_USER="$SNOWFLAKE_USER"
+        export SNOWFLAKE_PASSWORD="$SNOWFLAKE_PASSWORD"
+        export TF_VAR_snowflake_user="$SNOWFLAKE_USER"
+        export TF_VAR_snowflake_password="$SNOWFLAKE_PASSWORD"
+        export TF_VAR_fivetran_api_key="$FIVETRAN_API_KEY"
+        export TF_VAR_fivetran_api_secret="$FIVETRAN_API_SECRET"
+        export TF_VAR_dreamdata_external_id="$DREAMDATA_EXTERNAL_ID"
+        export TF_VAR_dreamdata_snowflake_integration_external_id="$SNOWFLAKE_AWS_EXTERNAL_ID"
+        export TF_VAR_datadog_api_key="$DATADOG_API_KEY"
 workflows:
   - tag_query: "not dir:modules/*" #"dir:sample-component or dir:fol/another-sample"
     plan:
