@@ -6,7 +6,7 @@
 apply_requirements:
   create_pending_apply_check: true
   checks:
-    - tag_query: "not dir:modules/*"  # Apply to all directories and workspaces
+    - tag_query: "not ( dir:modules/* or dir:datadog/modules/* or dir:analytics/modules/* or dir:provisioning-roles/* or dir:terraform-remote-state/* or dir:test/* or dir:.cookiecutter/*)"  # Apply to all directories and workspaces
       approved:
         enabled: true
       merge_conflicts:
@@ -62,14 +62,41 @@ hooks:
 #
 # Backend files come from GitHub Actions secrets (.github/workflows/terrateam.yml env):
 #   TF_BACKEND_CONFIG_HCL -> terrateam.tfbackend, TF_BACKEND_TFVARS_JSON -> backend.tfvars.json
+#
+# Secrets below are read from GitHub repo secrets (SECRETS_CONTEXT in terrateam.yml)
+# and exported before init/plan/apply, mirroring the legacy GHA terraform job env block.
+definitions:
+  write_backend_files: &write_backend_files
+    type: run
+    cmd:
+      - bash
+      - -c
+      - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
+  terraform_secrets: &terraform_secrets
+    - type: env
+      method: source
+      sensitive: true
+      cmd:
+        - bash
+        - -c
+        - |
+          echo "vars go here"
+          # export AKUITY_API_KEY_ID="$AKUITY_API_KEY_ID"
+          # export AKUITY_API_KEY_SECRET="$AKUITY_API_KEY_SECRET"
+          # export SNOWFLAKE_USER="$SNOWFLAKE_USER"
+          # export SNOWFLAKE_PASSWORD="$SNOWFLAKE_PASSWORD"
+          # export TF_VAR_snowflake_user="$SNOWFLAKE_USER"
+          # export TF_VAR_snowflake_password="$SNOWFLAKE_PASSWORD"
+          # export TF_VAR_fivetran_api_key="$FIVETRAN_API_KEY"
+          # export TF_VAR_fivetran_api_secret="$FIVETRAN_API_SECRET"
+          # export TF_VAR_dreamdata_external_id="$DREAMDATA_EXTERNAL_ID"
+          # export TF_VAR_dreamdata_snowflake_integration_external_id="$SNOWFLAKE_AWS_EXTERNAL_ID"
+          # export TF_VAR_datadog_api_key="$DATADOG_API_KEY"
 workflows:
   - tag_query: "not dir:modules/*" #"dir:sample-component or dir:fol/another-sample"
     plan:
-      - type: run
-        cmd:
-          - bash
-          - -c
-          - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
+      - *write_backend_files
+      - *terraform_secrets
       - type: init
         extra_args: ["-backend-config=terrateam.tfbackend"]
       - type: plan
@@ -80,11 +107,8 @@ workflows:
           - "-lock=false"
           - "-input=false"
     apply:
-      - type: run
-        cmd:
-          - bash
-          - -c
-          - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
+      - *write_backend_files
+      - *terraform_secrets
       - type: init
         extra_args: ["-backend-config=terrateam.tfbackend"]
       - type: apply
