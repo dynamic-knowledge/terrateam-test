@@ -6,7 +6,7 @@
 apply_requirements:
   create_pending_apply_check: true
   checks:
-    - tag_query: "not dir:modules/*"  # Apply to all directories and workspaces
+    - tag_query: "not ( dir:modules/* or dir:datadog/modules/* or dir:analytics/modules/* or dir:provisioning-roles/* or dir:terraform-remote-state/* or dir:test/* or dir:.cookiecutter/*)"  # Apply to all directories and workspaces
       approved:
         enabled: true
       merge_conflicts:
@@ -43,33 +43,40 @@ parallel_runs: 1
 batch_runs:
   enabled: true
   max_workspaces_per_batch: 50
-# OIDC runs globally before every operation (sets AWS credentials in env)
+
 hooks:
   all:
     pre:
       - type: oidc
         provider: aws
-        role_arn: "arn:aws:iam::619408137469:role/provisioning-backend"
+        role_arn: ${PROVISIONING_BACKEND_ROLE_ARN}
         region: us-west-2
         session_name: terrateam-gha
         duration: 3600
 
 
-# One workflow for all named workspaces: var file is workspaces/<workspace>.tfvars.json
-# (TERRATEAM_WORKSPACE matches the workspace key in dirs.*.workspaces).
-# Tag query must match implicit dir tags: dir:<repo-path> (see tag-system docs).
-# "another-sample" does NOT match fol/another-sample — use dir:fol/another-sample.
-#
-# Backend files come from GitHub Actions secrets (.github/workflows/terrateam.yml env):
-#   TF_BACKEND_CONFIG_HCL -> terrateam.tfbackend, TF_BACKEND_TFVARS_JSON -> backend.tfvars.json
+
+
+# Secrets below are read from GitHub repo secrets (SECRETS_CONTEXT in terrateam.yml)
+# and exported before init/plan/apply, mirroring the legacy GHA terraform job env block.
+definitions:
+  write_backend_files: &write_backend_files
+    type: run
+    cmd:
+      - bash
+      - -c
+      - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
+  terraform_secrets: &terraform_secrets
+    type: env
+    method: source
+    sensitive: true
+    cmd:
+      - $TERRATEAM_ROOT/scripts/terraform_secrets
 workflows:
   - tag_query: "not dir:modules/*" #"dir:sample-component or dir:fol/another-sample"
     plan:
-      - type: run
-        cmd:
-          - bash
-          - -c
-          - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
+      - *write_backend_files
+      - *terraform_secrets
       - type: init
         extra_args: ["-backend-config=terrateam.tfbackend"]
       - type: plan
@@ -80,11 +87,8 @@ workflows:
           - "-lock=false"
           - "-input=false"
     apply:
-      - type: run
-        cmd:
-          - bash
-          - -c
-          - printenv TF_BACKEND_CONFIG_HCL > terrateam.tfbackend && printenv TF_BACKEND_TFVARS_JSON > backend.tfvars.json
+      - *write_backend_files
+      - *terraform_secrets
       - type: init
         extra_args: ["-backend-config=terrateam.tfbackend"]
       - type: apply
