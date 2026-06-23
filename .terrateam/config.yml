@@ -43,26 +43,20 @@ parallel_runs: 1
 batch_runs:
   enabled: true
   max_workspaces_per_batch: 50
-# OIDC runs globally before every operation (sets AWS credentials in env)
+
 hooks:
   all:
     pre:
       - type: oidc
         provider: aws
-        role_arn: "arn:aws:iam::619408137469:role/provisioning-backend"
+        role_arn: ${PROVISIONING_BACKEND_ROLE_ARN}
         region: us-west-2
         session_name: terrateam-gha
         duration: 3600
 
 
-# One workflow for all named workspaces: var file is workspaces/<workspace>.tfvars.json
-# (TERRATEAM_WORKSPACE matches the workspace key in dirs.*.workspaces).
-# Tag query must match implicit dir tags: dir:<repo-path> (see tag-system docs).
-# "another-sample" does NOT match fol/another-sample — use dir:fol/another-sample.
-#
-# Backend files come from GitHub Actions secrets (.github/workflows/terrateam.yml env):
-#   TF_BACKEND_CONFIG_HCL -> terrateam.tfbackend, TF_BACKEND_TFVARS_JSON -> backend.tfvars.json
-#
+
+
 # Secrets below are read from GitHub repo secrets (SECRETS_CONTEXT in terrateam.yml)
 # and exported before init/plan/apply, mirroring the legacy GHA terraform job env block.
 definitions:
@@ -77,20 +71,7 @@ definitions:
     method: source
     sensitive: true
     cmd:
-      - bash
-      - -c
-      - |
-        export AKUITY_API_KEY_ID="$AKUITY_API_KEY_ID"
-        export AKUITY_API_KEY_SECRET="$AKUITY_API_KEY_SECRET"
-        export SNOWFLAKE_USER="$SNOWFLAKE_USER"
-        export SNOWFLAKE_PASSWORD="$SNOWFLAKE_PASSWORD"
-        export TF_VAR_snowflake_user="$SNOWFLAKE_USER"
-        export TF_VAR_snowflake_password="$SNOWFLAKE_PASSWORD"
-        export TF_VAR_fivetran_api_key="$FIVETRAN_API_KEY"
-        export TF_VAR_fivetran_api_secret="$FIVETRAN_API_SECRET"
-        export TF_VAR_dreamdata_external_id="$DREAMDATA_EXTERNAL_ID"
-        export TF_VAR_dreamdata_snowflake_integration_external_id="$SNOWFLAKE_AWS_EXTERNAL_ID"
-        export TF_VAR_datadog_api_key="$DATADOG_API_KEY"
+      - $TERRATEAM_ROOT/scripts/terraform_secrets
 workflows:
   - tag_query: "not dir:modules/*" #"dir:sample-component or dir:fol/another-sample"
     plan:
